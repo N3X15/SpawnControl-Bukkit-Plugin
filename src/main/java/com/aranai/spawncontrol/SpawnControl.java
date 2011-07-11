@@ -1,25 +1,35 @@
 package com.aranai.spawncontrol;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.logging.*;
-import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
+import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
-// Import permissions package
+import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
 /**
@@ -49,7 +59,7 @@ public class SpawnControl extends JavaPlugin {
     protected static String SQLCreateGroupsIndex = "CREATE UNIQUE INDEX groupIndex on `groups` (`name`,`world`);";
     
     // Permissions
-    public static Permissions Permissions = null;
+    public PermissionHandler permissionHandler = null;
     public boolean usePermissions = false;
     
     // Cache variables
@@ -230,16 +240,7 @@ public class SpawnControl extends JavaPlugin {
         this.initDB();
         
         // Initialize permissions system
-    	Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
-
-    	if(SpawnControl.Permissions == null) {
-    	    if(test != null) {
-    	    	SpawnControl.Permissions = (Permissions)test;
-    	    	this.usePermissions = true;
-    	    } else {
-    	    	log.warning("[SpawnControl] Permissions system not enabled, using isOP instead.");
-    	    }
-    	}
+        setupPermissions();
         
         // Register our events
         PluginManager pm = getServer().getPluginManager();
@@ -263,6 +264,22 @@ public class SpawnControl extends JavaPlugin {
     	PluginDescriptionFile pdfFile = this.getDescription();
     	log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] unloaded" );
     }
+    
+
+    private boolean setupPermissions() { 
+        Plugin permissionPlugin = getServer().getPluginManager().getPlugin("Permissions");
+
+        if (permissionHandler == null) {
+            if (permissionPlugin != null) {
+                permissionHandler = ((Permissions) permissionPlugin).getHandler();
+                return true;
+            } else {
+                log.warning("[SpawnControl] Permission system not detected, defaulting to OP");
+            }
+        }
+        return false;
+    }
+
     
     @Override
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
