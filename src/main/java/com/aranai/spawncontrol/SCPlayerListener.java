@@ -1,5 +1,7 @@
 package com.aranai.spawncontrol;
 
+import java.util.logging.Logger;
+
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -22,6 +24,7 @@ public class SCPlayerListener extends PlayerListener {
 
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args)
     {
+    	Logger.getLogger("Minecraft").info("onCommand(sender="+sender.toString()+",command="+commandLabel.toString()+",commandLabel="+commandLabel+",args={"+arrayToString(args)+"}");
     	// Split the command in case it has parameters
     	String[] cmd = args;
         String commandName = command.getName().toLowerCase();
@@ -320,7 +323,20 @@ public class SCPlayerListener extends PlayerListener {
     	return true;
     }
     
-    public void onPlayerJoin(PlayerJoinEvent e)
+    private String arrayToString(String[] args) {
+		String o = "";
+		boolean first = true;
+		for(int i = 0;i<args.length;i++) {
+			if(!first) {
+				o+=", ";
+			}
+			o+=args[i].toString();
+			first=false;
+		}
+		return o;
+	}
+
+	public void onPlayerJoin(PlayerJoinEvent e)
     {
     	if(plugin.getHome(e.getPlayer().getName(), e.getPlayer().getWorld()) == null)
     	{
