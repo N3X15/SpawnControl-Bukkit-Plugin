@@ -9,9 +9,7 @@ commands:
   spawn:
     description: Respawns you at the global spawn
     usage: /<command>
-  globalspawn:
-    description: Respawns you at the global spawn
-    usage: /<command>
+    aliases: [globalspawn]
   setgroupspawn:
     description: Sets the group spawn
     usage: |

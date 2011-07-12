@@ -19,8 +19,6 @@ import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
@@ -29,6 +27,15 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.aranai.spawncontrol.commands.GroupSpawnCommand;
+import com.aranai.spawncontrol.commands.HomeCommand;
+import com.aranai.spawncontrol.commands.SCConfigCommand;
+import com.aranai.spawncontrol.commands.SCImportConfigCommand;
+import com.aranai.spawncontrol.commands.SCImportGroupConfigCommand;
+import com.aranai.spawncontrol.commands.SetGroupSpawnCommand;
+import com.aranai.spawncontrol.commands.SetHomeCommand;
+import com.aranai.spawncontrol.commands.SetSpawnCommand;
+import com.aranai.spawncontrol.commands.SpawnCommand;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
@@ -257,6 +264,16 @@ public class SpawnControl extends JavaPlugin {
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
         log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] loaded" );
+
+        getCommand("setspawn").setExecutor(new SetSpawnCommand(this));
+        getCommand("spawn").setExecutor(new SpawnCommand(this));
+        getCommand("setgroupspawn").setExecutor(new SetGroupSpawnCommand(this));
+        getCommand("groupspawn").setExecutor(new GroupSpawnCommand(this));
+        getCommand("sethome").setExecutor(new SetHomeCommand(this));
+        getCommand("home").setExecutor(new HomeCommand(this));
+        getCommand("sc_config").setExecutor(new SCConfigCommand(this));
+        getCommand("scimportconfig").setExecutor(new SCImportConfigCommand(this));
+        getCommand("scimportgroupconfig").setExecutor(new SCImportGroupConfigCommand(this));
     }
     
     public void onDisable() {
@@ -278,12 +295,6 @@ public class SpawnControl extends JavaPlugin {
             }
         }
         return false;
-    }
-
-    
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
-    	return this.playerListener.onCommand(sender, command, commandLabel, args);
     }
     
     // Get timestamp
@@ -663,12 +674,14 @@ public class SpawnControl extends JavaPlugin {
     
     public void setCooldown(Player p, String cooldown)
     {
-    	String key = p.getName()+"."+cooldown;
-    	long cooldownAmount = this.getSetting("cooldown_"+cooldown);
-    	
-    	if(cooldownAmount > 0)
-    	{
-    		cooldowns.put(key, System.currentTimeMillis());
+    	if(!this.isExemptFromCooldowns(p, cooldown)) {
+    		String key = p.getName()+"."+cooldown;
+    		long cooldownAmount = this.getSetting("cooldown_"+cooldown);
+
+    		if(cooldownAmount > 0)
+    		{
+    			cooldowns.put(key, System.currentTimeMillis());
+    		}
     	}
     }
     
@@ -813,5 +826,112 @@ public class SpawnControl extends JavaPlugin {
                 }
             }
     	}
+    }
+
+    
+    public boolean isExemptFromCooldowns(Player p, String cooldown)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.CooldownExempt."+cooldown);
+    	}
+    	
+    	return p.isOp();
+    }
+    
+    public long cooldownLeft(Player p, String cooldown)
+    {
+    	// Check cooldown setting
+    	int cooldownAmount = this.getSetting("cooldown_"+cooldown);
+    	
+    	if(cooldownAmount > 0 && !this.isExemptFromCooldowns(p, cooldown))
+    	{
+    		// Check cooldown status for player
+    		return this.getCooldownRemaining(p, cooldown);
+    	}
+    	
+    	return 0;
+    }
+    
+    public boolean canUseSpawn(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.spawn.use");
+    	}
+    	
+    	return true;
+    }
+    
+    public boolean canUseSetSpawn(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.spawn.set");
+    	}
+    	
+    	return p.isOp();
+    }
+    
+    public boolean canUseSetGroupSpawn(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.groupspawn.set");
+    	}
+    	
+    	// Disabled without group support
+    	return false;
+    }
+    
+    public boolean canUseGroupSpawn(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.groupspawn.use");
+    	}
+    	
+    	// Disabled without group support
+    	return false;
+    }
+    
+    public boolean canUseHomeBasic(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.home.basic");
+    	}
+    	
+    	return true;
+    }
+    
+    public boolean canUseSetHomeBasic(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.sethome.basic");
+    	}
+    	
+    	return true;
+    }
+    
+    public boolean canUseSetHomeProxy(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.sethome.proxy");
+    	}
+    	
+    	return p.isOp();
+    }
+    
+    public boolean canUseScConfig(Player p)
+    {
+    	if(this.usePermissions)
+    	{
+    		return this.permissionHandler.has(p, "SpawnControl.config");
+    	}
+    	
+    	return p.isOp();
     }
 }
